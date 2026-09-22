@@ -8,20 +8,27 @@ Designed to run **100% locally with zero external billing or credit cards requir
 
 ## 🌟 Key Features
 
-- **⚡ Dual Storage Architecture**: Works both 100% offline with zero setup/billing (browser LocalStorage) and with Google Cloud (Firebase Auth + Firestore).
-- **📊 Scientific BMR & Macro Calculator**:
-  - Implements the **Mifflin-St Jeor formula** for accurate Basal Metabolic Rate (BMR).
-  - Calculates Total Daily Energy Expenditure (TDEE) based on customizable activity levels.
-  - Automatically derives tailored daily caloric quotas and macro distribution (Protein, Carbohydrates, Fats) based on fitness goals (Weight Loss / Maintenance / Muscle Gain).
-- **🍽 Automated Day Meal Planner**:
+- **⚡ Resilient Storage Architecture**: Works both 100% offline with zero external billing needed (automatic local browser persistence) and with Google Cloud (Firebase Auth + Firestore).
+- **🇮🇳 Comprehensive Indian Food & Regional Diet Plans**:
+  - 8 curated regional and lifestyle presets: North Indian Homestyle, South Indian Traditional, High-Protein Indian Vegetarian, Indian High-Protein Non-Veg, Jain/Satvik Pure Veg, Indian Calorie Deficit, Indian Keto, and Student Quick-Prep.
+  - Expansive database of authentic Indian staples (Roti, Idli, Dosa, Sambar, Paneer, Chole, Rajma, Moong Dal, Soya Chunks, Sattu, Chaas, Makhana, Poha, Khichdi, etc.).
+- **🍽 Structured 4-Meal Slot Day Planner**:
+  - Automatically divides daily targets across Breakfast, Lunch, Evening Snack, and Dinner.
   - Algorithmic meal generator matching target calories and macros.
-  - Respects dietary choices (Omnivore, Vegetarian, Vegan, Keto, Paleo) and allergen exclusions (Nuts, Lactose, Gluten, Shellfish, Soy).
-  - Multi-cuisine support (Indian, Asian, Mediterranean, Mexican, Global).
-  - One-click meal plan saving and history retrieval.
+  - Dynamic portion scaling based on individual BMR/TDEE targets.
+  - Respects dietary choices (Omnivore, Vegetarian, Vegan, Keto, Paleo) and allergen exclusions.
+- **🛒 Smart Grocery Shopping Checklist**:
+  - Auto-compiles ingredients from active meal plans grouped by aisle (Grains, Dairy & Protein, Fresh Produce, Pantry).
+  - Multiplier support for 1-day, 3-day, or 7-day meal preparation.
+  - Interactive item check-offs and one-click clipboard export.
+- **💧 Daily Hydration & Water Intake Tracker**:
+  - Visual 8-glass (2.0L) daily water intake logger with animated status badges.
 - **📋 Real-Time Food Intake Tracker**:
-  - Built-in food database with gram-level precision.
+  - Built-in food database with gram-level precision categorized by meal slots.
   - Interactive SVG macro ring and progress gauges.
   - Daily calorie deficit / surplus breakdown.
+- **🔍 Indian Nutrition & Food Explorer**:
+  - Searchable catalog of 60+ foods with macronutrient breakdowns per 100g and quick-log capabilities.
 - **📈 Progress & Analytics**:
   - 7-day calorie adherence trend visualization using Recharts.
 - **💎 Premium Glassmorphism UI**:
@@ -39,7 +46,7 @@ Designed to run **100% locally with zero external billing or credit cards requir
 
 1. Clone this repository:
    ```bash
-   git clone <your-github-repo-url>
+   git clone https://github.com/Aditya-Mahlawat/AI-Powered-Personal-Diet-Planner.git
    cd "AI-Powered Personal Diet Planner/diet-planner"
    ```
 
@@ -58,12 +65,9 @@ Designed to run **100% locally with zero external billing or credit cards requir
 
 ---
 
-## ⚡ Zero Billing / Local Mode
-No credit card or Firebase setup required!
-On the landing page, simply click:
-> **"⚡ Continue in Free Mode (Zero Billing)"**
-
-All features (profile setup, meal plans, food logging, charts) run locally in your browser with full persistent storage.
+## ⚡ Effortless Local & Cloud Execution
+No cloud configuration or credit cards required!
+Simply launch the app, enter your name, email, and password to sign in or create an account. The application features seamless local persistence: all user profiles, customized meal plans, grocery checklists, hydration data, and intake logs are saved reliably in your browser with zero billing barriers. When Firebase credentials are configured in `.env`, it automatically synchronizes with Google Cloud.
 
 ---
 

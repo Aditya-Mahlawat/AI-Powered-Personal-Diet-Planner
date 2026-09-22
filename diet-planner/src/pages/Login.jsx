@@ -160,36 +160,9 @@ export default function Login() {
           </button>
         </form>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '1.25rem 0 0.75rem' }}>
-          <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.1)' }} />
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Instant Access
-          </span>
-          <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.1)' }} />
-        </div>
-
-        <button
-          type="button"
-          id="free-mode"
-          onClick={handleGuest}
-          className="btn btn-secondary btn-lg"
-          style={{
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.5rem',
-            background: 'rgba(0, 255, 136, 0.08)',
-            borderColor: 'rgba(0, 255, 136, 0.3)',
-            color: 'var(--primary)',
-            fontWeight: 600,
-          }}
-        >
-          <span>⚡</span> Continue in Free Local Mode
-        </button>
-
-        <p className="text-center text-xs text-muted" style={{ marginTop: '1.25rem', lineHeight: 1.6 }}>
-          Full offline persistence in your browser with optional cloud synchronization.
+        <p className="text-center text-xs text-muted" style={{ marginTop: '1.75rem', lineHeight: 1.6 }}>
+          By continuing, you agree to our terms of service and privacy policy.
+          Your nutrition profiles and meal plans are securely synchronized to cloud storage.
         </p>
       </div>
     </div>

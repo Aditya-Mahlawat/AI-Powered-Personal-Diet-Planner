@@ -1,0 +1,36 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    // Helper: only the authenticated user matching uid can access their own data
+    function isSelf(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // User profile
+    match /users/{uid}/profile/{docId} {
+      allow read, write: if isSelf(uid);
+    }
+
+    // Saved meal plans
+    match /users/{uid}/plans/{planId} {
+      allow read, write: if isSelf(uid);
+    }
+
+    // Daily intake logs
+    match /users/{uid}/intake/{date} {
+      allow read, write: if isSelf(uid);
+    }
+
+    // Weekly adjustment settings
+    match /users/{uid}/settings/{docId} {
+      allow read, write: if isSelf(uid);
+    }
+
+    // Foods catalog — read by any authenticated user, write by no one (admin only)
+    match /foods/{foodId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+  }
+}

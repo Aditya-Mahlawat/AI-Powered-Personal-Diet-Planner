@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+diet-planner/node_modules/
+
+# Production build
+dist/
+diet-planner/dist/
+
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+diet-planner/.env
+diet-planner/.env.*
+!diet-planner/.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Cypress
+cypress/videos/
+cypress/screenshots/
+diet-planner/cypress/videos/
+diet-planner/cypress/screenshots/
+
+# Editor & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

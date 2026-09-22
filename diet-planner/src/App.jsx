@@ -7,6 +7,8 @@ import ProfileSetup from './pages/ProfileSetup'
 import Dashboard from './pages/Dashboard'
 import MealPlan from './pages/MealPlan'
 import IntakeLog from './pages/IntakeLog'
+import GroceryList from './pages/GroceryList'
+import FoodExplorer from './pages/FoodExplorer'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -105,6 +107,34 @@ export default function App() {
             ) : (
               <AppLayout>
                 <IntakeLog />
+              </AppLayout>
+            )}
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/grocery"
+        element={
+          <ProtectedRoute>
+            {!profile ? (
+              <Navigate to="/setup" replace />
+            ) : (
+              <AppLayout>
+                <GroceryList />
+              </AppLayout>
+            )}
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/foods"
+        element={
+          <ProtectedRoute>
+            {!profile ? (
+              <Navigate to="/setup" replace />
+            ) : (
+              <AppLayout>
+                <FoodExplorer />
               </AppLayout>
             )}
           </ProtectedRoute>

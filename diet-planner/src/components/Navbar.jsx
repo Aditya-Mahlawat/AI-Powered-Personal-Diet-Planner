@@ -7,6 +7,8 @@ const NAV_ITEMS = [
   { to: '/',          icon: '⊞',  label: 'Dashboard' },
   { to: '/meal-plan', icon: '🍽',  label: 'Meal Plans' },
   { to: '/intake',    icon: '📋', label: 'Intake Log' },
+  { to: '/grocery',   icon: '🛒', label: 'Grocery List' },
+  { to: '/foods',     icon: '🔍', label: 'Food Directory' },
   { to: '/setup',     icon: '👤', label: 'My Profile' },
 ]
 

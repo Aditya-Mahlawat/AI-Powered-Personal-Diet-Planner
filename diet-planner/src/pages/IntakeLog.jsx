@@ -8,6 +8,13 @@ import MealCard from '../components/MealCard'
 import MacroRing from '../components/MacroRing'
 import toast from 'react-hot-toast'
 
+const MEAL_SLOTS = [
+  { id: 'breakfast', label: '🌅 Breakfast', icon: '🌅' },
+  { id: 'lunch',     label: '☀️ Lunch',     icon: '☀️' },
+  { id: 'snack',     label: '☕ Snack',     icon: '☕' },
+  { id: 'dinner',    label: '🌙 Dinner',    icon: '🌙' },
+]
+
 export default function IntakeLog() {
   const { user, profile } = useAuth()
   const [targets, setTargets] = useState(null)
@@ -15,8 +22,10 @@ export default function IntakeLog() {
   const [searchResults, setSearchResults] = useState([])
   const [showResults, setShowResults] = useState(false)
   const [selectedFood, setSelectedFood] = useState(null)
+  const [selectedSlot, setSelectedSlot] = useState('lunch')
   const [grams, setGrams] = useState(100)
   const [todayItems, setTodayItems] = useState([])
+  const [waterGlasses, setWaterGlasses] = useState(0)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -43,12 +52,24 @@ export default function IntakeLog() {
     try {
       const data = await getDayIntake(user.uid, todayKey, user.isLocal)
       setTodayItems(data?.items || [])
+      const savedWater = localStorage.getItem(`nutrimind_water_${user.uid}_${todayKey}`)
+      if (savedWater) setWaterGlasses(Number(savedWater))
     } catch (err) {
       console.error(err)
     } finally {
       setLoading(false)
     }
   }, [user, todayKey])
+
+  const handleWaterClick = (count) => {
+    if (!user) return
+    const newCount = count === waterGlasses ? count - 1 : count
+    setWaterGlasses(newCount)
+    localStorage.setItem(`nutrimind_water_${user.uid}_${todayKey}`, newCount.toString())
+    if (newCount === 8) {
+      toast.success('🎉 Daily hydration goal reached! 2 Liters completed.')
+    }
+  }
 
   const handleSearch = (val) => {
     setSearchQuery(val)
@@ -82,6 +103,7 @@ export default function IntakeLog() {
         foodId: selectedFood.id,
         name: selectedFood.name,
         grams: Number(grams),
+        mealSlot: selectedSlot,
         ...nutrition,
         loggedAt: new Date().toISOString(),
       }
@@ -92,7 +114,7 @@ export default function IntakeLog() {
       setSelectedFood(null)
       setSearchQuery('')
       setGrams(100)
-      toast.success(`Added ${selectedFood.name} (${grams}g)`)
+      toast.success(`Added ${selectedFood.name} (${grams}g) to ${selectedSlot.toUpperCase()}`)
     } catch (err) {
       console.error(err)
       toast.error('Failed to log food item.')
@@ -119,26 +141,98 @@ export default function IntakeLog() {
     ? computeNutrition(selectedFood, Number(grams))
     : null
 
+  // Group logged items by slot
+  const slotGroups = {
+    breakfast: todayItems.filter(i => i.mealSlot === 'breakfast'),
+    lunch:     todayItems.filter(i => !i.mealSlot || i.mealSlot === 'lunch'),
+    snack:     todayItems.filter(i => i.mealSlot === 'snack'),
+    dinner:    todayItems.filter(i => i.mealSlot === 'dinner'),
+  }
+
   return (
     <div className="page-container">
       <div className="page-header">
-        <h1>📋 <span className="gradient-text">Intake Log</span></h1>
-        <p>{todayFormatted} — Track everything you eat today.</p>
+        <h1>📋 <span className="gradient-text">Daily Intake Log</span></h1>
+        <p>{todayFormatted} — Track every meal, snack, and water glass toward your daily target.</p>
       </div>
 
-      {/* Add food */}
-      <div className="card mb-4" style={{ marginBottom: '1.5rem' }}>
-        <h3 style={{ marginBottom: '1.25rem' }}>Log a Food Item</h3>
+      {/* Water tracker card */}
+      <div className="card mb-4" style={{ marginBottom: '1.5rem', background: 'rgba(0, 212, 255, 0.04)', borderColor: 'rgba(0, 212, 255, 0.2)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <span style={{ fontSize: '1.5rem' }}>💧</span>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.05rem' }}>Hydration Tracker</h3>
+              <span className="text-xs text-muted">Daily Goal: 8 Glasses (2.0 Liters)</span>
+            </div>
+          </div>
+          <span className="badge badge-blue" style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+            {waterGlasses * 250} ml / 2000 ml ({Math.round((waterGlasses / 8) * 100)}%)
+          </span>
+        </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0.75rem', alignItems: 'end' }}>
-          {/* Search */}
+        {/* 8 clickable glasses */}
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {Array.from({ length: 8 }).map((_, idx) => {
+            const isDrank = idx < waterGlasses
+            return (
+              <button
+                key={idx}
+                onClick={() => handleWaterClick(idx + 1)}
+                style={{
+                  flex: 1,
+                  minWidth: 42,
+                  height: 48,
+                  borderRadius: 8,
+                  border: isDrank ? '1px solid #00d4ff' : '1px solid var(--border)',
+                  background: isDrank ? 'rgba(0, 212, 255, 0.2)' : 'rgba(255, 255, 255, 0.03)',
+                  color: isDrank ? '#00d4ff' : 'var(--text-muted)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <span>🥛</span>
+                <span>{idx + 1}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Log a Food Item Box */}
+      <div className="card mb-4" style={{ marginBottom: '1.5rem' }}>
+        <div className="section-title" style={{ marginBottom: '1rem' }}>Log a Food Item</div>
+
+        {/* Meal slot selector */}
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+          {MEAL_SLOTS.map((slot) => (
+            <button
+              key={slot.id}
+              type="button"
+              onClick={() => setSelectedSlot(slot.id)}
+              className={`btn btn-sm ${selectedSlot === slot.id ? 'btn-primary' : 'btn-ghost'}`}
+              style={{ borderRadius: 20 }}
+            >
+              {slot.label}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '1rem', alignItems: 'flex-end' }}>
+          {/* Search box */}
           <div className="form-group" style={{ position: 'relative' }}>
             <label className="form-label">Search Food</label>
-            <div className="food-search-wrap">
-              <span className="food-search-icon">🔍</span>
+            <div style={{ position: 'relative' }}>
               <input
+                type="text"
                 className="form-input food-search-input"
-                placeholder="e.g. chicken breast, paneer, oats…"
+                placeholder="e.g. roti, paneer bhurji, dal, oats, chicken curry…"
                 value={searchQuery}
                 onChange={e => handleSearch(e.target.value)}
                 onFocus={() => searchQuery && setShowResults(true)}
@@ -170,6 +264,7 @@ export default function IntakeLog() {
           <div className="form-group">
             <label className="form-label">Grams (g)</label>
             <input
+              id="grams"
               className="form-input"
               type="number"
               min={1}
@@ -212,11 +307,9 @@ export default function IntakeLog() {
         )}
       </div>
 
-      {/* Today's intake + ring */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '1.5rem', alignItems: 'start', marginBottom: '1.5rem' }}>
+      {/* Today's categorized intake + ring */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '1.5rem', alignItems: 'start', marginBottom: '1.5rem' }}>
         <div>
-          <div className="section-title">Today's Log</div>
-
           {loading ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
               <div className="spinner" />
@@ -224,79 +317,63 @@ export default function IntakeLog() {
           ) : todayItems.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">🍽</div>
-              <p>Nothing logged yet. Search for a food item above to get started.</p>
+              <p>Nothing logged yet. Search for an Indian or global food item above to get started.</p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-              {todayItems.map((item, i) => (
-                <MealCard key={i} item={item} onRemove={() => handleRemove(i)} />
-              ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {MEAL_SLOTS.map((slot) => {
+                const itemsInSlot = slotGroups[slot.id] || []
+                if (itemsInSlot.length === 0) return null
+                const slotCalories = itemsInSlot.reduce((acc, i) => acc + (i.kcal || 0), 0)
+
+                return (
+                  <div key={slot.id} className="card" style={{ padding: '1.25rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.4rem' }}>
+                      <span style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--text-primary)' }}>{slot.label}</span>
+                      <span className="badge badge-green" style={{ fontSize: '0.75rem' }}>{slotCalories} kcal</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                      {itemsInSlot.map((item, i) => {
+                        const originalIndex = todayItems.indexOf(item)
+                        return (
+                          <MealCard key={i} item={item} onRemove={() => handleRemove(originalIndex)} />
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>
 
-        {/* Macro ring */}
-        <div className="card card-gradient" style={{ minWidth: 200, maxWidth: 240 }}>
+        {/* Macro ring & summary sidebar */}
+        <div className="card card-gradient" style={{ position: 'sticky', top: '1.5rem' }}>
           <h4 style={{ marginBottom: '1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>TODAY'S TOTALS</h4>
-          {targets ? (
-            <MacroRing macros={targets.macros} consumed={totals} size={150} />
-          ) : (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem' }}>
-              <div className="spinner" />
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+            <MacroRing macros={{ p: totals.p, c: totals.c, f: totals.f }} size={160} />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.85rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span className="text-muted">Calories:</span>
+              <b>{totals.kcal} {targets ? `/ ${targets.cal} kcal` : 'kcal'}</b>
             </div>
-          )}
-          <hr className="divider" />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-            {[
-              { label: 'Calories', value: totals.kcal, color: 'var(--text-primary)', unit: 'kcal' },
-              { label: 'Protein', value: `${totals.p}`, color: '#00ff88', unit: 'g' },
-              { label: 'Carbs', value: `${totals.c}`, color: '#00d4ff', unit: 'g' },
-              { label: 'Fat', value: `${totals.f}`, color: '#8b5cf6', unit: 'g' },
-            ].map(({ label, value, color, unit }) => (
-              <div key={label} style={{ textAlign: 'center', padding: '0.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>
-                <div style={{ fontSize: '1rem', fontWeight: 700, color }}>{value}<span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginLeft: 2 }}>{unit}</span></div>
-                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{label}</div>
-              </div>
-            ))}
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: '#00ff88' }}>Protein:</span>
+              <b>{totals.p}g {targets ? `/ ${targets.macros.p}g` : ''}</b>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: '#00d4ff' }}>Carbs:</span>
+              <b>{totals.c}g {targets ? `/ ${targets.macros.c}g` : ''}</b>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: '#8b5cf6' }}>Fat:</span>
+              <b>{totals.f}g {targets ? `/ ${targets.macros.f}g` : ''}</b>
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Daily summary */}
-      {targets && todayItems.length > 0 && (
-        <div className="card card-highlight">
-          <h3 style={{ marginBottom: '1rem' }}>Daily Summary</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {[
-              { label: 'Calories', consumed: totals.kcal, target: targets.cal, color: '#00ff88', unit: 'kcal' },
-              { label: 'Protein', consumed: totals.p, target: targets.macros.p, color: '#00ff88', unit: 'g' },
-              { label: 'Carbohydrates', consumed: totals.c, target: targets.macros.c, color: '#00d4ff', unit: 'g' },
-              { label: 'Fat', consumed: totals.f, target: targets.macros.f, color: '#8b5cf6', unit: 'g' },
-            ].map(({ label, consumed, target, color, unit }) => {
-              const pct = target > 0 ? Math.min(100, Math.round((consumed / target) * 100)) : 0
-              const remaining = Math.max(0, target - consumed)
-              return (
-                <div key={label}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{label}</span>
-                    <span className="text-sm font-semibold">
-                      {consumed}{unit} / {target}{unit}
-                      {remaining > 0 && (
-                        <span className="text-muted" style={{ fontWeight: 400, marginLeft: 6 }}>
-                          ({remaining}{unit} left)
-                        </span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="progress-bar-wrap">
-                    <div className={`progress-bar${pct >= 100 ? ' over' : ''}`} style={{ width: `${pct}%`, background: pct >= 100 ? 'var(--accent-red)' : color }} />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

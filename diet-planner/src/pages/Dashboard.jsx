@@ -99,10 +99,16 @@ export default function Dashboard() {
           </div>
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
             <button onClick={() => navigate('/meal-plan')} className="btn btn-primary">
-              🍽 Generate Meal Plan
+              🍽 Meal Plans
             </button>
             <button onClick={() => navigate('/intake')} className="btn btn-secondary">
-              📋 Log Intake
+              📋 Log Food
+            </button>
+            <button onClick={() => navigate('/grocery')} className="btn btn-secondary">
+              🛒 Grocery List
+            </button>
+            <button onClick={() => navigate('/foods')} className="btn btn-secondary">
+              🔍 Food Directory
             </button>
           </div>
         </div>

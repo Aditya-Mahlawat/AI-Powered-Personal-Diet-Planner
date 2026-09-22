@@ -1,22 +1,33 @@
 // src/pages/MealPlan.jsx
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { calculateTargets, planDay, computeIntakeTotals } from '../utils/macros'
+import { calculateTargets, planDay, scalePresetPlan } from '../utils/macros'
+import { FOODS_CATALOG, INDIAN_PRESET_PLANS } from '../data/foods'
 import { getSavedPlans, savePlanData } from '../services/storageService'
-import { FOODS_CATALOG } from '../data/foods'
 import MealCard from '../components/MealCard'
 import MacroRing from '../components/MacroRing'
 import toast from 'react-hot-toast'
 
+const SLOT_META = {
+  breakfast: { title: 'Breakfast', icon: '🌅', color: '#ffb703' },
+  lunch:     { title: 'Lunch',     icon: '☀️', color: '#00d4ff' },
+  snack:     { title: 'Evening Snack', icon: '☕', color: '#a78bfa' },
+  dinner:    { title: 'Dinner',    icon: '🌙', color: '#00ff88' },
+}
+
 export default function MealPlan() {
   const { user, profile } = useAuth()
+  const navigate = useNavigate()
   const [targets, setTargets] = useState(null)
   const [plan, setPlan] = useState([])
+  const [planSource, setPlanSource] = useState('custom')
   const [generating, setGenerating] = useState(false)
   const [saving, setSaving] = useState(false)
   const [savedPlans, setSavedPlans] = useState([])
   const [loadingPlans, setLoadingPlans] = useState(true)
-  const [viewPlan, setViewPlan] = useState(null)
+  const [selectedPresetId, setSelectedPresetId] = useState('north_indian_veg')
+  const [activeTab, setActiveTab] = useState('presets') // 'presets' | 'custom'
 
   useEffect(() => {
     if (profile) {
@@ -30,6 +41,14 @@ export default function MealPlan() {
       })
       setTargets(t)
       loadSavedPlans()
+
+      // Auto-load default Indian preset scaled to user's targets
+      const defaultPreset = INDIAN_PRESET_PLANS[0]
+      if (defaultPreset) {
+        const scaled = scalePresetPlan(defaultPreset, t.cal)
+        setPlan(scaled.flatItems)
+        setPlanSource(defaultPreset.title)
+      }
     }
   }, [profile])
 
@@ -46,10 +65,20 @@ export default function MealPlan() {
     }
   }
 
-  const handleGenerate = () => {
+  // Load a curated Indian plan
+  const handleSelectPreset = (preset) => {
+    setSelectedPresetId(preset.id)
+    if (!targets) return
+    const scaled = scalePresetPlan(preset, targets.cal)
+    setPlan(scaled.flatItems)
+    setPlanSource(preset.title)
+    toast.success(`Loaded "${preset.title}" calibrated to ${scaled.scaledCalories} kcal`)
+  }
+
+  // Custom algorithmic plan generation
+  const handleGenerateCustom = () => {
     if (!targets || !profile) return
     setGenerating(true)
-    setViewPlan(null)
     setTimeout(() => {
       try {
         const generated = planDay({
@@ -59,10 +88,11 @@ export default function MealPlan() {
           foods: FOODS_CATALOG,
         })
         setPlan(generated)
+        setPlanSource('Custom Algorithm Plan')
         if (generated.length === 0) {
-          toast.error('No suitable foods found for your preferences. Try adjusting your dietary settings.')
+          toast.error('No suitable foods found for your preferences. Try adjusting settings.')
         } else {
-          toast.success(`Generated ${generated.length} meals for your day!`)
+          toast.success(`Generated custom plan matching your exact macros!`)
         }
       } catch (err) {
         toast.error('Failed to generate plan.')
@@ -70,7 +100,7 @@ export default function MealPlan() {
       } finally {
         setGenerating(false)
       }
-    }, 800) // UI transition delay
+    }, 600)
   }
 
   const handleSavePlan = async () => {
@@ -87,6 +117,7 @@ export default function MealPlan() {
       await savePlanData(
         user.uid,
         {
+          title: planSource,
           total_cal: totals.kcal,
           macros: { p: totals.p, c: totals.c, f: totals.f },
           days: [{ items: plan }],
@@ -95,8 +126,7 @@ export default function MealPlan() {
         user.isLocal
       )
 
-      toast.success('Plan saved successfully!')
-      setPlan([])
+      toast.success('Plan saved to cloud storage!')
       await loadSavedPlans()
     } catch (err) {
       console.error(err)
@@ -106,6 +136,12 @@ export default function MealPlan() {
     }
   }
 
+  const handleOpenGrocery = () => {
+    // Save current plan to localStorage temporarily so grocery list page can read it
+    localStorage.setItem('nutrimind_active_plan', JSON.stringify(plan))
+    navigate('/grocery')
+  }
+
   const planTotals = plan.reduce((acc, item) => ({
     kcal: acc.kcal + item.kcal,
     p: Math.round((acc.p + item.p) * 10) / 10,
@@ -113,99 +149,241 @@ export default function MealPlan() {
     f: Math.round((acc.f + item.f) * 10) / 10,
   }), { kcal: 0, p: 0, c: 0, f: 0 })
 
+  // Group plan into meal slots
+  const groupedPlan = {
+    breakfast: plan.filter(i => i.mealSlot === 'breakfast'),
+    lunch:     plan.filter(i => i.mealSlot === 'lunch'),
+    snack:     plan.filter(i => i.mealSlot === 'snack'),
+    dinner:    plan.filter(i => i.mealSlot === 'dinner'),
+  }
+  // If plan items didn't have mealSlot assigned, distribute them evenly
+  if (groupedPlan.breakfast.length === 0 && plan.length > 0) {
+    const perSlot = Math.ceil(plan.length / 4)
+    groupedPlan.breakfast = plan.slice(0, perSlot)
+    groupedPlan.lunch = plan.slice(perSlot, perSlot * 2)
+    groupedPlan.snack = plan.slice(perSlot * 2, perSlot * 3)
+    groupedPlan.dinner = plan.slice(perSlot * 3)
+  }
+
   return (
     <div className="page-container">
-      <div className="page-header">
-        <h1>🍽 <span className="gradient-text">Meal Plans</span></h1>
-        <p>Generate personalised day plans tailored to your macros, preferences, and dietary goals.</p>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <h1>🍽 <span className="gradient-text">Meal Plans & Diet Schedules</span></h1>
+          <p>Explore curated Indian regional diet plans or generate custom daily menus calibrated to your macros.</p>
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button onClick={handleOpenGrocery} className="btn btn-secondary">
+            🛒 Grocery List
+          </button>
+        </div>
       </div>
 
-      {/* Targets summary */}
+      {/* Target summary badge */}
       {targets && (
         <div className="card card-gradient mb-4" style={{ marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
-              <h3>Your Daily Targets</h3>
-              <p className="text-sm">Based on your profile: {profile?.goal} goal, {profile?.diet_pref} diet</p>
+              <h3>Daily Nutrition Targets</h3>
+              <p className="text-sm">Calibrated for {profile?.name || 'you'}: {profile?.goal?.toUpperCase()} goal · {profile?.diet_pref?.toUpperCase()} diet</p>
             </div>
             <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-green)' }}>{targets.cal}</div>
-                <div className="text-xs text-muted">kcal/day</div>
+                <div className="text-xs text-muted">kcal / day</div>
               </div>
-              {[
-                { label: 'Protein', value: `${targets.macros.p}g`, color: '#00ff88' },
-                { label: 'Carbs', value: `${targets.macros.c}g`, color: '#00d4ff' },
-                { label: 'Fat', value: `${targets.macros.f}g`, color: '#8b5cf6' },
-              ].map(({ label, value, color }) => (
-                <div key={label} style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 700, color }}>{value}</div>
-                  <div className="text-xs text-muted">{label}</div>
-                </div>
-              ))}
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#00ff88' }}>{targets.macros.p}g</div>
+                <div className="text-xs text-muted">Protein</div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#00d4ff' }}>{targets.macros.c}g</div>
+                <div className="text-xs text-muted">Carbs</div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#8b5cf6' }}>{targets.macros.f}g</div>
+                <div className="text-xs text-muted">Fats</div>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Generate button */}
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+      {/* Mode tabs */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
         <button
-          onClick={handleGenerate}
-          className="btn btn-primary btn-lg"
-          disabled={generating}
+          onClick={() => setActiveTab('presets')}
+          className={`btn ${activeTab === 'presets' ? 'btn-primary' : 'btn-ghost'}`}
+          style={{ fontSize: '0.9rem' }}
         >
-          {generating
-            ? <><div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> Generating…</>
-            : '✨ Generate Plan'
-          }
+          🍛 Indian Regional Plans ({INDIAN_PRESET_PLANS.length})
         </button>
-        {plan.length > 0 && (
-          <button
-            onClick={handleSavePlan}
-            className="btn btn-secondary"
-            disabled={saving}
-          >
-            {saving ? 'Saving…' : '💾 Save to Cloud'}
-          </button>
-        )}
+        <button
+          onClick={() => setActiveTab('custom')}
+          className={`btn ${activeTab === 'custom' ? 'btn-primary' : 'btn-ghost'}`}
+          style={{ fontSize: '0.9rem' }}
+        >
+          ✨ Custom Macro Generator
+        </button>
       </div>
 
-      {/* Generated plan */}
-      {plan.length > 0 && (
-        <div className="card mb-4" style={{ marginBottom: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-            <h2>Your Meal Plan</h2>
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-              <span className="badge badge-green">{planTotals.kcal} kcal total</span>
-              <span className="text-xs text-muted">P:{planTotals.p}g · C:{planTotals.c}g · F:{planTotals.f}g</span>
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '1.5rem', alignItems: 'start' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {plan.map((item, i) => (
-                <div key={i} style={{ animationDelay: `${i * 0.08}s`, padding: 0 }}>
-                  <MealCard item={item} />
+      {/* Tab: Indian Presets */}
+      {activeTab === 'presets' && (
+        <div style={{ marginBottom: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+            {INDIAN_PRESET_PLANS.map((preset) => {
+              const isSelected = selectedPresetId === preset.id
+              return (
+                <div
+                  key={preset.id}
+                  onClick={() => handleSelectPreset(preset)}
+                  className="card"
+                  style={{
+                    cursor: 'pointer',
+                    borderColor: isSelected ? 'var(--primary)' : 'var(--border)',
+                    background: isSelected ? 'rgba(0, 255, 136, 0.05)' : 'var(--surface)',
+                    transition: 'all 0.2s ease',
+                    boxShadow: isSelected ? '0 0 16px rgba(0, 255, 136, 0.15)' : 'none',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                    <span className="badge badge-green" style={{ fontSize: '0.7rem' }}>{preset.region}</span>
+                    <span className="text-xs text-muted">~{preset.calories} kcal base</span>
+                  </div>
+                  <h4 style={{ margin: '0.3rem 0 0.4rem', color: isSelected ? 'var(--primary)' : 'var(--text-primary)' }}>
+                    {preset.title}
+                  </h4>
+                  <p className="text-sm text-muted" style={{ lineHeight: 1.4, marginBottom: '0.75rem' }}>
+                    {preset.description}
+                  </p>
+                  <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                    <span>P: <b>{preset.macros.p}g</b></span>
+                    <span>C: <b>{preset.macros.c}g</b></span>
+                    <span>F: <b>{preset.macros.f}g</b></span>
+                  </div>
                 </div>
-              ))}
-            </div>
-
-            <div style={{ minWidth: 200 }}>
-              <MacroRing macros={{ p: planTotals.p, c: planTotals.c, f: planTotals.f }} size={160} />
-            </div>
-          </div>
-
-          <div className="alert alert-info mt-3" style={{ marginTop: '1rem' }}>
-            <span>💡</span>
-            <span>This plan is built to hit your daily macro targets. Feel free to adjust portions based on your preference and hunger.</span>
+              )
+            })}
           </div>
         </div>
       )}
 
-      {/* Saved plans */}
+      {/* Tab: Custom Generator */}
+      {activeTab === 'custom' && (
+        <div className="card mb-4" style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h3>Algorithmic Meal Composition</h3>
+            <p className="text-sm text-muted">Synthesizes optimal food portions from the 60+ item nutritional catalog to match your exact calorie & macro targets.</p>
+          </div>
+          <button
+            onClick={handleGenerateCustom}
+            className="btn btn-primary btn-lg"
+            disabled={generating}
+          >
+            {generating
+              ? <><div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> Generating…</>
+              : '✨ Synthesize Custom Plan'
+            }
+          </button>
+        </div>
+      )}
+
+      {/* Active Meal Plan Breakdown */}
+      {plan.length > 0 && (
+        <div style={{ marginBottom: '2.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <h2>{planSource}</h2>
+              <span className="text-sm text-muted">Calibrated to your daily requirements</span>
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <button
+                onClick={handleSavePlan}
+                className="btn btn-primary"
+                disabled={saving}
+              >
+                {saving ? 'Saving…' : '💾 Save to Cloud'}
+              </button>
+              <button
+                onClick={handleOpenGrocery}
+                className="btn btn-secondary"
+              >
+                🛒 View Grocery Checklist
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '1.5rem', alignItems: 'start' }}>
+            {/* Meal Slots list */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {Object.entries(groupedPlan).map(([slotKey, items]) => {
+                const meta = SLOT_META[slotKey] || { title: slotKey, icon: '🍽', color: '#00ff88' }
+                const slotCalories = items.reduce((acc, i) => acc + (i.kcal || 0), 0)
+                const slotProtein = items.reduce((acc, i) => acc + (i.p || 0), 0).toFixed(1)
+                const slotCarbs = items.reduce((acc, i) => acc + (i.c || 0), 0).toFixed(1)
+                const slotFat = items.reduce((acc, i) => acc + (i.f || 0), 0).toFixed(1)
+
+                return (
+                  <div key={slotKey} className="card" style={{ padding: '1.25rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, fontSize: '1.05rem', color: meta.color }}>
+                        <span>{meta.icon}</span>
+                        <span>{meta.title}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{slotCalories} kcal</span>
+                        <span>P: {slotProtein}g</span>
+                        <span>C: {slotCarbs}g</span>
+                        <span>F: {slotFat}g</span>
+                      </div>
+                    </div>
+
+                    {items.length === 0 ? (
+                      <p className="text-sm text-muted" style={{ margin: '0.5rem 0' }}>No items planned for this slot.</p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                        {items.map((item, idx) => (
+                          <MealCard key={idx} item={item} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Macro ring & summary sidebar */}
+            <div className="card card-gradient" style={{ position: 'sticky', top: '1.5rem' }}>
+              <h4 style={{ marginBottom: '1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>PLAN TOTALS</h4>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+                <MacroRing macros={{ p: planTotals.p, c: planTotals.c, f: planTotals.f }} size={170} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.85rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Total Calories:</span>
+                  <span style={{ fontWeight: 700, color: 'var(--primary)' }}>{planTotals.kcal} kcal</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#00ff88' }}>Protein:</span>
+                  <b>{planTotals.p}g</b>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#00d4ff' }}>Carbohydrates:</span>
+                  <b>{planTotals.c}g</b>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#8b5cf6' }}>Fat:</span>
+                  <b>{planTotals.f}g</b>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Saved plans list */}
       <div>
-        <div className="section-title">Saved Plans</div>
+        <div className="section-title">Saved Plans in Cloud Storage</div>
         {loadingPlans ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
             <div className="spinner" />
@@ -213,39 +391,34 @@ export default function MealPlan() {
         ) : savedPlans.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">📂</div>
-            <p>No saved plans yet. Generate and save your first plan above.</p>
+            <p>No saved plans yet. Generate or select a plan above and save it to your cloud storage.</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {savedPlans.map((p) => {
               const date = p.createdAt?.toDate
                 ? p.createdAt.toDate().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-                : 'Saved plan'
+                : new Date(p.createdAt || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
               const items = p.days?.[0]?.items || []
               return (
                 <div
                   key={p.id}
                   className="card"
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => setViewPlan(viewPlan === p.id ? null : p.id)}
+                  onClick={() => {
+                    setPlan(items)
+                    setPlanSource(p.title || 'Saved Plan')
+                    toast.success('Loaded saved plan!')
+                  }}
+                  style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontWeight: 600 }}>{date}</div>
-                      <div className="text-xs text-muted">{items.length} items · {p.total_cal} kcal</div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                      <span className="badge badge-green">{p.total_cal} kcal</span>
-                      <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{viewPlan === p.id ? '▲' : '▼'}</span>
-                    </div>
+                  <div>
+                    <h4 style={{ margin: 0 }}>{p.title || 'Saved Meal Plan'}</h4>
+                    <span className="text-xs text-muted">{date} · {items.length} items planned</span>
                   </div>
-
-                  {viewPlan === p.id && items.length > 0 && (
-                    <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      <hr className="divider" />
-                      {items.map((item, i) => <MealCard key={i} item={item} />)}
-                    </div>
-                  )}
+                  <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
+                    <span className="badge badge-green">{p.total_cal} kcal</span>
+                    <button className="btn btn-ghost btn-sm">Load</button>
+                  </div>
                 </div>
               )
             })}

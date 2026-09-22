@@ -36,6 +36,7 @@ export default function Login() {
         toast.success('Account created! Let\'s set up your profile.')
       }
       navigate('/')
+    } catch (err) {
       let msg = 'Something went wrong. Please try again.'
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         msg = 'Invalid email or password.'

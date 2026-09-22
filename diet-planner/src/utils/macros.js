@@ -62,19 +62,34 @@ export function computeNutrition(food, grams) {
  * Greedy knapsack-style meal planner (as specified in project document)
  * Selects foods to approximate target macros while respecting diet preferences and allergies
  */
-export function planDay({ macros, diet_pref, allergies = [], foods }) {
+export function planDay({ macros, diet_pref, allergies = [], cuisines = [], foods }) {
   let rem = { p: macros.p, c: macros.c, f: macros.f };
   const plan = [];
 
   const filtered = foods.filter((food) => {
-    if (diet_pref === "vegan" && food.tags.includes("nonveg")) return false;
+    if (diet_pref === "vegan" && (food.tags.includes("nonveg") || food.tags.includes("dairy"))) return false;
+    if (diet_pref === "veg" && food.tags.includes("nonveg")) return false;
+    if (allergies.some((a) => food.tags.includes(a))) return false;
+    if (cuisines && cuisines.length > 0) {
+      const matchesCuisine =
+        cuisines.includes(food.cuisine) ||
+        food.cuisine === "global" ||
+        (cuisines.includes("indian") && food.cuisine === "south_indian");
+      if (!matchesCuisine) return false;
+    }
+    return true;
+  });
+
+  // Fall back gracefully if too restrictive
+  const candidatePool = filtered.length >= 3 ? filtered : foods.filter((food) => {
+    if (diet_pref === "vegan" && (food.tags.includes("nonveg") || food.tags.includes("dairy"))) return false;
     if (diet_pref === "veg" && food.tags.includes("nonveg")) return false;
     if (allergies.some((a) => food.tags.includes(a))) return false;
     return true;
   });
 
   // shuffle to add variety across plan generations
-  const shuffled = [...filtered].sort(() => Math.random() - 0.5);
+  const shuffled = [...candidatePool].sort(() => Math.random() - 0.5);
 
   for (const food of shuffled) {
     let grams = 0;

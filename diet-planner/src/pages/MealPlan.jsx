@@ -16,6 +16,22 @@ const SLOT_META = {
   dinner:    { title: 'Dinner',    icon: '🌙', color: '#00ff88' },
 }
 
+const ALLERGY_OPTIONS = [
+  { id: 'nuts',      label: '🥜 Nuts' },
+  { id: 'lactose',   label: '🥛 Lactose' },
+  { id: 'gluten',    label: '🌾 Gluten' },
+  { id: 'shellfish', label: '🦐 Shellfish' },
+  { id: 'soy',       label: '🫘 Soy' },
+]
+
+const CUISINE_OPTIONS = [
+  { id: 'indian',        label: '🇮🇳 Indian' },
+  { id: 'mexican',       label: '🌮 Mexican' },
+  { id: 'mediterranean', label: '🫒 Mediterranean' },
+  { id: 'asian',         label: '🍜 Asian' },
+  { id: 'global',        label: '🌍 Global' },
+]
+
 export default function MealPlan() {
   const { user, profile } = useAuth()
   const navigate = useNavigate()
@@ -28,6 +44,9 @@ export default function MealPlan() {
   const [loadingPlans, setLoadingPlans] = useState(true)
   const [selectedPresetId, setSelectedPresetId] = useState('north_indian_veg')
   const [activeTab, setActiveTab] = useState('presets') // 'presets' | 'custom'
+  const [selectedAllergies, setSelectedAllergies] = useState([])
+  const [selectedCuisines, setSelectedCuisines] = useState(['indian'])
+  const [dietPref, setDietPref] = useState('omnivore')
 
   useEffect(() => {
     if (profile) {
@@ -41,6 +60,10 @@ export default function MealPlan() {
       })
       setTargets(t)
       loadSavedPlans()
+
+      if (profile.allergies?.length) setSelectedAllergies(profile.allergies)
+      if (profile.cuisines?.length) setSelectedCuisines(profile.cuisines)
+      if (profile.diet_pref) setDietPref(profile.diet_pref)
 
       // Auto-load default Indian preset scaled to user's targets
       const defaultPreset = INDIAN_PRESET_PLANS[0]
@@ -65,6 +88,18 @@ export default function MealPlan() {
     }
   }
 
+  const toggleAllergy = (id) => {
+    setSelectedAllergies(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
+  }
+
+  const toggleCuisine = (id) => {
+    setSelectedCuisines(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
+  }
+
   // Load a curated Indian plan
   const handleSelectPreset = (preset) => {
     setSelectedPresetId(preset.id)
@@ -83,12 +118,14 @@ export default function MealPlan() {
       try {
         const generated = planDay({
           macros: targets.macros,
-          diet_pref: profile.diet_pref,
-          allergies: profile.allergies || [],
+          diet_pref: dietPref,
+          allergies: selectedAllergies,
+          cuisines: selectedCuisines,
           foods: FOODS_CATALOG,
         })
         setPlan(generated)
-        setPlanSource('Custom Algorithm Plan')
+        const cuisineNames = selectedCuisines.map(c => c.charAt(0).toUpperCase() + c.slice(1)).join(' / ')
+        setPlanSource(`Custom Plan (${cuisineNames || 'Any Cuisine'})`)
         if (generated.length === 0) {
           toast.error('No suitable foods found for your preferences. Try adjusting settings.')
         } else {
@@ -270,21 +307,104 @@ export default function MealPlan() {
 
       {/* Tab: Custom Generator */}
       {activeTab === 'custom' && (
-        <div className="card mb-4" style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-          <div>
-            <h3>Algorithmic Meal Composition</h3>
-            <p className="text-sm text-muted">Synthesizes optimal food portions from the 60+ item nutritional catalog to match your exact calorie & macro targets.</p>
+        <div className="card mb-4" style={{ marginBottom: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+            <div>
+              <h3 style={{ margin: 0 }}>✨ Algorithmic Meal Composition</h3>
+              <p className="text-sm text-muted" style={{ margin: '0.25rem 0 0' }}>
+                Select your cuisine preferences and allergies below, then synthesize a tailored daily menu matching your exact targets.
+              </p>
+            </div>
+            <button
+              id="btnSynthesizePlan"
+              onClick={handleGenerateCustom}
+              className="btn btn-primary btn-lg"
+              disabled={generating}
+            >
+              {generating
+                ? <><div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> Generating…</>
+                : '⚡ Synthesize Custom Plan'
+              }
+            </button>
           </div>
-          <button
-            onClick={handleGenerateCustom}
-            className="btn btn-primary btn-lg"
-            disabled={generating}
-          >
-            {generating
-              ? <><div className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} /> Generating…</>
-              : '✨ Synthesize Custom Plan'
-            }
-          </button>
+
+          {/* Interactive Preferences & Filter Controls */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', background: 'rgba(255,255,255,0.02)', padding: '1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+            {/* Preferred Cuisines */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
+                <label className="form-label" style={{ margin: 0, fontWeight: 600 }}>Preferred Cuisines</label>
+                <span className="text-xs text-muted">{selectedCuisines.length} selected</span>
+              </div>
+              <div className="checkbox-group">
+                {CUISINE_OPTIONS.map(({ id, label }) => {
+                  const isChecked = selectedCuisines.includes(id)
+                  return (
+                    <button
+                      type="button"
+                      id={`btn-cuisine-${id}`}
+                      key={id}
+                      className={`checkbox-chip${isChecked ? ' checked' : ''}`}
+                      onClick={() => toggleCuisine(id)}
+                      aria-pressed={isChecked}
+                    >
+                      <span>{isChecked ? '✓' : '+'}</span>
+                      {label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Allergies & Exclusions */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
+                <label className="form-label" style={{ margin: 0, fontWeight: 600 }}>Allergies / Avoid Foods</label>
+                <span className="text-xs text-muted">{selectedAllergies.length} excluded</span>
+              </div>
+              <div className="checkbox-group">
+                {ALLERGY_OPTIONS.map(({ id, label }) => {
+                  const isChecked = selectedAllergies.includes(id)
+                  return (
+                    <button
+                      type="button"
+                      id={`btn-allergy-${id}`}
+                      key={id}
+                      className={`checkbox-chip${isChecked ? ' checked' : ''}`}
+                      onClick={() => toggleAllergy(id)}
+                      aria-pressed={isChecked}
+                    >
+                      <span>{isChecked ? '✓' : '+'}</span>
+                      {label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Dietary Preference */}
+            <div>
+              <label className="form-label" style={{ marginBottom: '0.6rem', fontWeight: 600 }}>Dietary Lifestyle</label>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {[
+                  { id: 'omnivore', label: '🥩 Omnivore' },
+                  { id: 'veg', label: '🥦 Vegetarian' },
+                  { id: 'vegan', label: '🌱 Vegan' },
+                ].map(({ id, label }) => (
+                  <button
+                    type="button"
+                    id={`btn-diet-${id}`}
+                    key={id}
+                    onClick={() => setDietPref(id)}
+                    className={`btn btn-sm ${dietPref === id ? 'btn-primary' : 'btn-ghost'}`}
+                    style={{ fontSize: '0.82rem' }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

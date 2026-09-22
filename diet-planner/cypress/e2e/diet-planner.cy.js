@@ -50,6 +50,11 @@ describe('NutriMind Comprehensive End-to-End Automated Browser Test', () => {
     // Step 3: Dietary preferences
     cy.contains('Preferences')
     cy.get('#diet_pref').select('omnivore')
+    // Test allergy and cuisine chips in Profile Setup
+    cy.contains('🌮 Mexican').click()
+    cy.contains('🌮 Mexican').should('have.class', 'checked')
+    cy.contains('🥜 Nuts').click()
+    cy.contains('🥜 Nuts').should('have.class', 'checked')
     cy.get('#saveProfile').click()
 
     // 1. Verify Dashboard
@@ -65,7 +70,21 @@ describe('NutriMind Comprehensive End-to-End Automated Browser Test', () => {
     cy.contains('South Indian Traditional').should('be.visible')
     cy.contains('High-Protein Indian Vegetarian').should('be.visible')
 
-    // Select South Indian Traditional preset
+    // Test Custom Macro Generator with Mexican and Allergy buttons
+    cy.contains('Custom Macro Generator').click()
+    // Mexican was selected during profile onboarding so it is already checked
+    cy.get('#btn-cuisine-mexican').should('have.class', 'checked')
+    // Click Indian to also include Indian cuisine
+    cy.get('#btn-cuisine-indian').should('be.visible').click()
+    cy.get('#btn-cuisine-indian').should('have.class', 'checked')
+    // Toggle gluten allergy exclusion
+    cy.get('#btn-allergy-gluten').should('be.visible').click()
+    cy.get('#btn-allergy-gluten').should('have.class', 'checked')
+    cy.get('#btnSynthesizePlan').click()
+    cy.contains('Generated custom plan', { timeout: 10000 }).should('be.visible')
+
+    // Switch back to Indian Presets & select South Indian Traditional preset
+    cy.contains('Indian Regional Plans').click()
     cy.contains('South Indian Traditional').click()
     cy.contains('Loaded "South Indian Traditional Feast"').should('be.visible')
 

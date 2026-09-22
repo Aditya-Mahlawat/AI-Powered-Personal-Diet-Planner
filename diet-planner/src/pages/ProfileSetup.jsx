@@ -378,32 +378,42 @@ export default function ProfileSetup() {
             <div className="form-group">
               <label className="form-label">Allergies / Intolerances</label>
               <div className="checkbox-group">
-                {ALLERGY_OPTIONS.map(({ id, label }) => (
-                  <label
-                    key={id}
-                    className={`checkbox-chip${form.allergies.includes(id) ? ' checked' : ''}`}
-                    onClick={() => toggleArray('allergies', id)}
-                  >
-                    <input type="checkbox" readOnly checked={form.allergies.includes(id)} />
-                    {label}
-                  </label>
-                ))}
+                {ALLERGY_OPTIONS.map(({ id, label }) => {
+                  const isChecked = form.allergies.includes(id)
+                  return (
+                    <button
+                      type="button"
+                      key={id}
+                      className={`checkbox-chip${isChecked ? ' checked' : ''}`}
+                      onClick={() => toggleArray('allergies', id)}
+                      aria-pressed={isChecked}
+                    >
+                      <span>{isChecked ? '✓' : '+'}</span>
+                      {label}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
             <div className="form-group">
               <label className="form-label">Preferred Cuisines</label>
               <div className="checkbox-group">
-                {CUISINE_OPTIONS.map(({ id, label }) => (
-                  <label
-                    key={id}
-                    className={`checkbox-chip${form.cuisines.includes(id) ? ' checked' : ''}`}
-                    onClick={() => toggleArray('cuisines', id)}
-                  >
-                    <input type="checkbox" readOnly checked={form.cuisines.includes(id)} />
-                    {label}
-                  </label>
-                ))}
+                {CUISINE_OPTIONS.map(({ id, label }) => {
+                  const isChecked = form.cuisines.includes(id)
+                  return (
+                    <button
+                      type="button"
+                      key={id}
+                      className={`checkbox-chip${isChecked ? ' checked' : ''}`}
+                      onClick={() => toggleArray('cuisines', id)}
+                      aria-pressed={isChecked}
+                    >
+                      <span>{isChecked ? '✓' : '+'}</span>
+                      {label}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>

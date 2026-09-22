@@ -316,27 +316,37 @@ p { color: var(--text-secondary); }
 }
 
 .checkbox-chip {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.4rem 0.85rem;
+  padding: 0.45rem 0.9rem;
   border-radius: var(--radius-full);
   border: 1px solid var(--glass-border);
   background: rgba(255,255,255,0.04);
   cursor: pointer;
+  font-family: inherit;
   font-size: 0.85rem;
+  font-weight: 500;
   color: var(--text-secondary);
   transition: all var(--transition);
   user-select: none;
+  outline: none;
+}
+
+.checkbox-chip:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
 }
 
 .checkbox-chip input { display: none; }
 
 .checkbox-chip:has(input:checked),
 .checkbox-chip.checked {
-  background: rgba(0, 255, 136, 0.12);
-  border-color: rgba(0, 255, 136, 0.4);
+  background: rgba(0, 255, 136, 0.15);
+  border-color: rgba(0, 255, 136, 0.5);
   color: var(--accent-green);
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.15);
 }
 
 /* ---- Progress / Stats ---- */

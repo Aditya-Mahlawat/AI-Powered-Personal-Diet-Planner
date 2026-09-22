@@ -72,6 +72,22 @@ export const FOODS_CATALOG = [
   { id: "peanut_butter", name: "Peanut Butter (Unsweetened)", category: "snacks", per100: { kcal: 588, p: 25.1, c: 20.0, f: 50.4 }, tags: ["veg", "vegan", "nuts", "high_protein"], cuisine: "global", serving: "1 tbsp (20g) ~ 118 kcal" },
   { id: "banana", name: "Banana (Kela)", category: "snacks", per100: { kcal: 89, p: 1.1, c: 22.8, f: 0.3 }, tags: ["veg", "vegan", "jain"], cuisine: "global", serving: "1 medium (110g) ~ 98 kcal" },
   { id: "apple", name: "Apple (Seb)", category: "snacks", per100: { kcal: 52, p: 0.3, c: 14.0, f: 0.2 }, tags: ["veg", "vegan", "jain"], cuisine: "global", serving: "1 medium (150g) ~ 78 kcal" },
+
+  // ---- Mexican Cuisine Staples ----
+  { id: "black_beans", name: "Mexican Black Beans (Frijoles)", category: "protein_veg", per100: { kcal: 132, p: 8.9, c: 23.7, f: 0.5 }, tags: ["veg", "vegan", "high_protein"], cuisine: "mexican", serving: "1 cup cooked (170g) ~ 224 kcal" },
+  { id: "corn_tortilla", name: "Mexican Corn Tortilla", category: "grains", per100: { kcal: 218, p: 5.7, c: 45.0, f: 2.8 }, tags: ["veg", "vegan"], cuisine: "mexican", serving: "2 tortillas (50g) ~ 109 kcal" },
+  { id: "guacamole", name: "Guacamole (Fresh Avocado Dip)", category: "vegetables", per100: { kcal: 160, p: 2.0, c: 8.5, f: 14.7 }, tags: ["veg", "vegan"], cuisine: "mexican", serving: "3 tbsp (50g) ~ 80 kcal" },
+  { id: "chicken_fajitas", name: "Grilled Chicken Fajitas", category: "protein_nonveg", per100: { kcal: 145, p: 22.0, c: 4.5, f: 4.5 }, tags: ["nonveg", "high_protein"], cuisine: "mexican", serving: "1 portion (150g) ~ 217 kcal" },
+  { id: "salsa_roja", name: "Fresh Salsa (Pico de Gallo)", category: "vegetables", per100: { kcal: 36, p: 1.5, c: 7.0, f: 0.2 }, tags: ["veg", "vegan"], cuisine: "mexican", serving: "1/2 cup (100g) ~ 36 kcal" },
+
+  // ---- Mediterranean Cuisine Staples ----
+  { id: "hummus", name: "Mediterranean Hummus (Chickpeas & Tahini)", category: "protein_veg", per100: { kcal: 166, p: 7.9, c: 14.3, f: 9.6 }, tags: ["veg", "vegan"], cuisine: "mediterranean", serving: "3 tbsp (60g) ~ 100 kcal" },
+  { id: "pita_bread", name: "Whole Wheat Pita Bread", category: "grains", per100: { kcal: 260, p: 9.5, c: 53.0, f: 1.5 }, tags: ["veg", "vegan", "gluten"], cuisine: "mediterranean", serving: "1 pita (60g) ~ 156 kcal" },
+  { id: "greek_salad", name: "Greek Salad with Feta & Olives", category: "vegetables", per100: { kcal: 110, p: 3.5, c: 5.0, f: 8.5 }, tags: ["veg", "dairy", "lactose"], cuisine: "mediterranean", serving: "1 bowl (150g) ~ 165 kcal" },
+  { id: "grilled_salmon", name: "Mediterranean Grilled Salmon", category: "protein_nonveg", per100: { kcal: 208, p: 20.0, c: 0.0, f: 13.0 }, tags: ["nonveg", "high_protein"], cuisine: "mediterranean", serving: "1 fillet (150g) ~ 312 kcal" },
+
+  // ---- Asian Cuisine Staples ----
+  { id: "edamame", name: "Steamed Edamame (Soybeans)", category: "protein_veg", per100: { kcal: 122, p: 11.0, c: 9.0, f: 5.0 }, tags: ["veg", "vegan", "soy", "high_protein"], cuisine: "asian", serving: "1 cup (155g) ~ 189 kcal" },
 ]
 
 // Curated Indian Regional & Nutritional Daily Meal Plans

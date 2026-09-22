@@ -6,22 +6,12 @@ import { validateAuth } from '../utils/validators'
 import toast from 'react-hot-toast'
 
 export default function Login() {
-  const { login, register, loginAsGuest } = useAuth()
+  const { login, register } = useAuth()
   const navigate = useNavigate()
   const [tab, setTab] = useState('login')
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({ name: '', email: '', password: '' })
   const [errors, setErrors] = useState({})
-
-  const handleGuest = async () => {
-    try {
-      await loginAsGuest(form.name.trim() || 'Diet Planner User')
-      toast.success('Welcome! Running in 100% Free Mode (No billing required).')
-      navigate('/')
-    } catch {
-      toast.error('Failed to enter free mode.')
-    }
-  }
 
   const handleChange = (e) => {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }))

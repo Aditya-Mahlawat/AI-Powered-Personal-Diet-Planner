@@ -97,7 +97,16 @@ export function planDay({ macros, diet_pref, allergies = [], foods }) {
       rem.p = Math.max(0, rem.p - nutrition.p);
       rem.c = Math.max(0, rem.c - nutrition.c);
       rem.f = Math.max(0, rem.f - nutrition.f);
-      plan.push({ foodId: food.id, name: food.name, grams, ...nutrition, tags: food.tags });
+      const slots = ["breakfast", "lunch", "lunch", "snack", "dinner", "dinner"];
+      const mealSlot = slots[plan.length] || "dinner";
+      plan.push({
+        foodId: food.id,
+        name: food.name,
+        grams,
+        ...nutrition,
+        tags: food.tags,
+        mealSlot,
+      });
     }
     if (plan.length >= 6) break;
   }
@@ -106,9 +115,53 @@ export function planDay({ macros, diet_pref, allergies = [], foods }) {
 }
 
 /**
+ * Scale an Indian preset meal plan to fit the user's specific daily calorie quota
+ */
+export function scalePresetPlan(presetPlan, targetCalories) {
+  const target = targetCalories || presetPlan.calories || 2000;
+  const base = presetPlan.calories || 2000;
+  const scale = target / base;
+  const meals = {};
+  let totalKcal = 0, totalP = 0, totalC = 0, totalF = 0;
+
+  for (const [slot, items] of Object.entries(presetPlan.meals)) {
+    meals[slot] = items.map((item) => {
+      const grams = Math.max(15, Math.round((item.grams * scale) / 5) * 5);
+      const ratio = item.grams > 0 ? grams / item.grams : 1;
+      const scaledItem = {
+        ...item,
+        grams,
+        kcal: Math.round(item.kcal * ratio),
+        p: Math.round(item.p * ratio * 10) / 10,
+        c: Math.round(item.c * ratio * 10) / 10,
+        f: Math.round(item.f * ratio * 10) / 10,
+        mealSlot: slot,
+      };
+      totalKcal += scaledItem.kcal;
+      totalP += scaledItem.p;
+      totalC += scaledItem.c;
+      totalF += scaledItem.f;
+      return scaledItem;
+    });
+  }
+
+  return {
+    ...presetPlan,
+    scaledCalories: totalKcal,
+    scaledMacros: {
+      p: Math.round(totalP),
+      c: Math.round(totalC),
+      f: Math.round(totalF),
+    },
+    meals,
+    flatItems: Object.values(meals).flat(),
+  };
+}
+
+/**
  * Compute totals from an array of logged intake items
  */
-export function computeIntakeTotals(items) {
+export function computeIntakeTotals(items = []) {
   return items.reduce(
     (acc, item) => ({
       kcal: acc.kcal + (item.kcal || 0),

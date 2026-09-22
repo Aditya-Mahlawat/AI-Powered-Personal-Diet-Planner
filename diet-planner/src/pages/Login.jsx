@@ -173,7 +173,7 @@ export default function Login() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '1.25rem 0 0.75rem' }}>
           <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.1)' }} />
           <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            No Cloud Billing?
+            Instant Access
           </span>
           <div style={{ flex: 1, height: 1, background: 'rgba(255, 255, 255, 0.1)' }} />
         </div>
@@ -195,11 +195,11 @@ export default function Login() {
             fontWeight: 600,
           }}
         >
-          <span>⚡</span> Continue in Free Mode (Zero Billing)
+          <span>⚡</span> Continue in Free Local Mode
         </button>
 
         <p className="text-center text-xs text-muted" style={{ marginTop: '1.25rem', lineHeight: 1.6 }}>
-          100% Free forever. Runs locally in your browser with full offline persistence or connects with Firebase.
+          Full offline persistence in your browser with optional cloud synchronization.
         </p>
       </div>
     </div>

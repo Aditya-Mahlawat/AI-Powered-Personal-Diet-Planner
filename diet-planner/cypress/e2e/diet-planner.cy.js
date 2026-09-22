@@ -13,17 +13,15 @@ describe('Diet Planner End-to-End Automated Browser Test', () => {
     cy.get('#password').should('be.visible')
     cy.get('#login').should('be.visible')
     cy.get('#free-mode').should('be.visible')
-    cy.screenshot('01-login-page')
   })
 
   it('2. validates form inputs properly on empty submit', () => {
     cy.visit('/login')
     cy.get('#login').click()
     cy.contains('valid email').should('be.visible')
-    cy.screenshot('02-validation-errors')
   })
 
-  it('3. completes onboarding, generates meal plan, and logs intake in Free Mode', () => {
+  it('3. completes onboarding, generates meal plan, and logs intake in Local Mode', () => {
     cy.visit('/login')
 
     // Click Continue in Free Mode
@@ -61,7 +59,6 @@ describe('Diet Planner End-to-End Automated Browser Test', () => {
     cy.contains('Daily Calories', { timeout: 10000 }).should('be.visible')
     cy.contains('BMR').should('be.visible')
     cy.contains('TDEE').should('be.visible')
-    cy.screenshot('03-dashboard')
 
     // Navigate to Meal Plan
     cy.visit('/meal-plan')
@@ -71,7 +68,6 @@ describe('Diet Planner End-to-End Automated Browser Test', () => {
     // Meal plan generated
     cy.contains('Your Meal Plan', { timeout: 10000 }).should('be.visible')
     cy.get('.meal-card').should('have.length.at.least', 1)
-    cy.screenshot('04-meal-plan-generated')
 
     // Save Meal Plan
     cy.contains('Save to Cloud').click()
@@ -86,6 +82,5 @@ describe('Diet Planner End-to-End Automated Browser Test', () => {
     cy.contains('.food-result-item', 'Oats', { timeout: 5000 }).click()
     cy.contains('+ Add').click()
     cy.contains('Added Oats', { timeout: 5000 }).should('be.visible')
-    cy.screenshot('05-intake-logged')
   })
 })

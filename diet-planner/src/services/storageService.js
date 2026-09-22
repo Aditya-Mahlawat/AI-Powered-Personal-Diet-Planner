@@ -16,8 +16,8 @@ import {
 import { db, auth } from '../firebase'
 
 /**
- * Resizes and converts any uploaded image into a compact Base64 JPEG (< 40KB).
- * This eliminates the need for Firebase Cloud Storage (which requires billing).
+ * Resizes and converts any uploaded image into a compact Base64 JPEG (< 40KB)
+ * for fast offline and database storage.
  */
 export function fileToBase64(file) {
   return new Promise((resolve, reject) => {

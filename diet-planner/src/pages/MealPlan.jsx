@@ -70,7 +70,7 @@ export default function MealPlan() {
       } finally {
         setGenerating(false)
       }
-    }, 800) // simulate thinking time for better UX
+    }, 800) // UI transition delay
   }
 
   const handleSavePlan = async () => {

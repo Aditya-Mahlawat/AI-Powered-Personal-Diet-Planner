@@ -46,6 +46,9 @@ export function calculateTargets({ sex, weight_kg, height_cm, age, activity_leve
  * Compute nutrition values for a given food item and gram amount
  */
 export function computeNutrition(food, grams) {
+  if (!food || !food.per100 || !grams) {
+    return { kcal: 0, p: 0, c: 0, f: 0 };
+  }
   const ratio = grams / 100;
   return {
     kcal: Math.round(food.per100.kcal * ratio),

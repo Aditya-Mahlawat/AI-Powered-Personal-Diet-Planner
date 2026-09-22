@@ -33,6 +33,7 @@ export const FOODS_CATALOG = [
   { id: "greek_yogurt", name: "Greek Yogurt (Unsweetened)", category: "protein_veg", per100: { kcal: 59, p: 10.0, c: 3.6, f: 0.4 }, tags: ["veg", "dairy", "lactose", "high_protein"], cuisine: "global", serving: "1 cup (150g) ~ 88 kcal (15g Protein)" },
 
   // ---- Non-Vegetarian Proteins ----
+  { id: "egg", name: "Egg (Whole Boiled)", category: "protein_nonveg", per100: { kcal: 155, p: 13.0, c: 1.1, f: 11.0 }, tags: ["nonveg", "high_protein"], cuisine: "global", serving: "1 large egg (50g) ~ 78 kcal (6.5g Protein)" },
   { id: "egg_boiled", name: "Boiled Whole Egg", category: "protein_nonveg", per100: { kcal: 155, p: 13.0, c: 1.1, f: 11.0 }, tags: ["nonveg", "high_protein"], cuisine: "global", serving: "1 large egg (50g) ~ 78 kcal (6.5g Protein)" },
   { id: "egg_whites", name: "Egg Whites", category: "protein_nonveg", per100: { kcal: 52, p: 11.0, c: 0.7, f: 0.2 }, tags: ["nonveg", "high_protein"], cuisine: "global", serving: "3 egg whites (100g) ~ 52 kcal (11g Protein)" },
   { id: "egg_bhurji", name: "Indian Egg Bhurji (Scrambled)", category: "protein_nonveg", per100: { kcal: 180, p: 12.5, c: 3.2, f: 13.0 }, tags: ["nonveg", "high_protein"], cuisine: "indian", serving: "2 eggs bhurji (130g) ~ 234 kcal" },
